@@ -129,8 +129,6 @@ Type a question in the chat box. A loading indicator shows until the answer appe
 
 ## End-to-end architecture
 
-> GitHub tip: short Mermaid labels render correctly; details are listed under each diagram.
-
 ### 1) Offline setup — `ingest.py`
 
 ```mermaid
