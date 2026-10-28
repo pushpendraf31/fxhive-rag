@@ -129,24 +129,60 @@ Type a question in the chat box. A loading indicator shows until the answer appe
 
 ## End-to-end architecture
 
-```mermaid
-flowchart TB
-  subgraph Offline["Offline / Setup — ingest.py"]
-    PDF["PDF<br/>documents/fxhive.pdf"] --> Load["Load pages<br/>PyPDFLoader"]
-    Load --> Split["Split chunks<br/>size=1000, overlap=200"]
-    Split --> Embed1["Embed chunks<br/>gemini-embedding-001"]
-    Embed1 --> Qdrant["Qdrant<br/>collection: fxhive_documents<br/>vectors + text + metadata"]
-  end
+> GitHub tip: short Mermaid labels render correctly; details are listed under each diagram.
 
-  subgraph Online["Online / Runtime — ask.py"]
-    UI["Chat UI<br/>http://127.0.0.1:7860"] --> Q["User question"]
-    Q --> Embed2["Embed question<br/>gemini-embedding-001"]
-    Embed2 --> Search["Similarity search<br/>top k=3 chunks"]
-    Qdrant --> Search
-    Search --> Prompt["Stuff context into prompt"]
-    Prompt --> Gemini["Gemini 3.6 Flash"]
-    Gemini --> Answer["Answer shown in UI"]
-  end
+### 1) Offline setup — `ingest.py`
+
+```mermaid
+flowchart LR
+  A[PDF] --> B[Load]
+  B --> C[Split]
+  C --> D[Embed]
+  D --> E[(Qdrant)]
+```
+
+| Step | Detail |
+|------|--------|
+| PDF | `documents/fxhive.pdf` |
+| Load | `PyPDFLoader` |
+| Split | chunk size `1000`, overlap `200` |
+| Embed | `gemini-embedding-001` |
+| Qdrant | collection `fxhive_documents` (vectors + text + metadata) |
+
+### 2) Online ask — `ask.py`
+
+```mermaid
+flowchart LR
+  A[Chat UI] --> B[Question]
+  B --> C[Embed]
+  C --> D[Search]
+  D --> E[Top chunks]
+  E --> F[Prompt]
+  F --> G[Gemini]
+  G --> H[Answer]
+```
+
+| Step | Detail |
+|------|--------|
+| Chat UI | `http://127.0.0.1:7860` |
+| Embed | same model: `gemini-embedding-001` |
+| Search | similarity search in Qdrant, top `k=3` |
+| Prompt | retrieved chunks stuffed into system context |
+| Gemini | `gemini-3.6-flash` |
+| Answer | shown in chat UI (loader until ready) |
+
+### 3) How both sides connect
+
+```text
+┌──────────────── ingest.py (offline) ────────────────┐
+│  PDF → Load → Split → Embed → Qdrant                │
+└──────────────────────────┬──────────────────────────┘
+                           │ stores vectors + text
+                           ▼
+┌──────────────── ask.py (online) ────────────────────┐
+│  Question → Embed → Search (top 3) → Prompt         │
+│            → Gemini → Answer in UI                  │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -154,23 +190,26 @@ flowchart TB
 ## Pipeline flow (ingest + ask)
 
 ```mermaid
-flowchart LR
-  subgraph Ingest
+flowchart TB
+  subgraph INGEST[ingest.py]
+    direction LR
     A[PDF] --> B[Load] --> C[Split] --> D[Embed] --> E[(Qdrant)]
   end
 
-  subgraph Ask
-    F[Question] --> G[Embed] --> H[Similarity search]
-    E -.-> H
-    H --> I[Top chunks] --> J[Prompt + Gemini] --> K[Answer]
+  subgraph ASK[ask.py]
+    direction LR
+    F[Question] --> G[Embed] --> H[Search] --> I[Chunks] --> J[Gemini] --> K[Answer]
   end
+
+  E -.->|read vectors| H
 ```
 
-Text form of the same flow:
+Same flow in plain text (always readable on GitHub):
 
 ```text
 PDF  →  Load  →  Split  →  Embed  →  Qdrant
-                                         ↑
+                                         │
+                                         ▼
 Question → Embed → Similarity search → top chunks → Prompt + Gemini → Answer
                     (semantic search)
 ```
@@ -180,16 +219,28 @@ Question → Embed → Similarity search → top chunks → Prompt + Gemini → 
 ## Detailed step meanings
 
 ```mermaid
-flowchart TD
-  A["1. Load PDF"] --> B["2. Split into chunks"]
-  B --> C["3. Embeddings turn chunks into vectors"]
-  C --> D["4. Qdrant stores vectors + text + metadata"]
-  D --> E["5. User asks a question"]
-  E --> F["6. Question is embedded"]
-  F --> G["7. Semantic search finds nearest chunks"]
-  G --> H["8. Context + question sent to Gemini"]
-  H --> I["9. Answer returned in chat UI"]
+flowchart LR
+  S1[1 Load] --> S2[2 Split]
+  S2 --> S3[3 Embed]
+  S3 --> S4[4 Store]
+  S4 --> S5[5 Ask]
+  S5 --> S6[6 Embed Q]
+  S6 --> S7[7 Search]
+  S7 --> S8[8 Gemini]
+  S8 --> S9[9 Answer]
 ```
+
+| # | Step | Meaning |
+|---|------|---------|
+| 1 | Load | Read PDF pages into documents |
+| 2 | Split | Break text into overlapping chunks |
+| 3 | Embed | Turn chunks into vectors |
+| 4 | Store | Save vectors + text + metadata in Qdrant |
+| 5 | Ask | User sends a question from the UI |
+| 6 | Embed Q | Turn the question into a vector |
+| 7 | Search | Find nearest chunks (semantic search) |
+| 8 | Gemini | Generate answer from retrieved context only |
+| 9 | Answer | Show response in the chat UI |
 
 | Concept | Meaning in this project |
 |---------|-------------------------|
@@ -207,22 +258,22 @@ flowchart TD
 sequenceDiagram
   actor User
   participant UI as Chat UI
-  participant Ask as ask.py
-  participant Emb as Gemini Embeddings
+  participant API as ask.py
+  participant Emb as Embeddings
   participant QD as Qdrant
-  participant LLM as Gemini 3.6 Flash
+  participant LLM as Gemini
 
   User->>UI: Type question
-  UI->>UI: Show loading dots / status
-  UI->>Ask: POST /ask { message }
-  Ask->>Emb: Embed question
-  Emb-->>Ask: Question vector
-  Ask->>QD: Similarity search (k=3)
-  QD-->>Ask: Top document chunks
-  Ask->>LLM: System prompt + context + question
-  LLM-->>Ask: Answer
-  Ask-->>UI: { answer }
-  UI->>User: Replace loader with answer
+  UI->>UI: Show loader
+  UI->>API: POST /ask
+  API->>Emb: Embed question
+  Emb-->>API: Vector
+  API->>QD: Search k=3
+  QD-->>API: Top chunks
+  API->>LLM: Prompt + context
+  LLM-->>API: Answer
+  API-->>UI: JSON answer
+  UI->>User: Show answer
 ```
 
 ---
