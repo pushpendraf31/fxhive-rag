@@ -4,6 +4,12 @@ A **Retrieval-Augmented Generation (RAG)** app that answers questions from a com
 
 Users ask questions in a ChatGPT-style UI. The system finds relevant PDF chunks, then Gemini answers **only from that context**.
 
+### Live demo
+
+**https://fxhive-rag.onrender.com/**
+
+> Free Render tier may sleep after idle time — the first request can take ~30–60 seconds to wake up.
+
 ---
 
 ## What this project does
