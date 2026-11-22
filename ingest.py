@@ -1,5 +1,7 @@
 """Ingest a PDF into Qdrant (embed + store)."""
 
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,7 +14,8 @@ from qdrant_client import QdrantClient
 
 PDF_PATH = "documents/fxhive.pdf"
 COLLECTION = "fxhive_documents"
-QDRANT_URL = "http://localhost:6333"
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY") or None
 
 
 def main() -> None:
@@ -28,7 +31,7 @@ def main() -> None:
     print(f"Chunks created: {len(chunks)}")
 
     # 3) Recreate collection so re-ingest stays clean
-    client = QdrantClient(url=QDRANT_URL)
+    client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
     if client.collection_exists(COLLECTION):
         client.delete_collection(COLLECTION)
 
@@ -38,6 +41,7 @@ def main() -> None:
         chunks,
         embedding=embeddings,
         url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
         collection_name=COLLECTION,
     )
     print("PDF indexed successfully!")

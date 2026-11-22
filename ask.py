@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from dotenv import load_dotenv
@@ -18,8 +19,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain_qdrant import QdrantVectorStore
 
 COLLECTION = "fxhive_documents"
-QDRANT_URL = "http://localhost:6333"
-HOST, PORT = "127.0.0.1", 7860
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY") or None
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "7860"))
 
 PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -172,6 +175,7 @@ def build_rag():
         embedding=embeddings,
         collection_name=COLLECTION,
         url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
     )
     llm = ChatGoogleGenerativeAI(model="gemini-3.6-flash", max_retries=2)
     return create_retrieval_chain(
