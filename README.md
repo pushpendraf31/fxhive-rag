@@ -242,7 +242,7 @@ flowchart LR
 
 | Concept | Meaning in this project |
 |---------|-------------------------|
-| **Embeddings** | Turn text chunks (and the question) into numeric **vectors** |
+| **Embeddings** OR **Tokenization**  | Turn text chunks (and the question) into numeric **vectors** |
 | **Qdrant** | Vector database that stores **vectors + original text + metadata** |
 | **Similarity search** | Finds chunks whose vectors are closest to the question vector |
 | **RAG** | Retrieve relevant text first, then generate an answer from it |
@@ -283,8 +283,8 @@ sequenceDiagram
 | PDF path | `documents/fxhive.pdf` |
 | Collection | `fxhive_documents` |
 | Qdrant URL | `http://localhost:6333` |
-| Chunk size | `1000` |
-| Chunk overlap | `200` |
+| Chunk size | `1000` char |
+| Chunk overlap | `200` char |
 | Top-k retrieved | `3` |
 | Embedding model | `models/gemini-embedding-001` |
 | Chat model | `gemini-3.6-flash` |
