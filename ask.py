@@ -148,8 +148,7 @@ UI = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       height: 100dvh;
-      width: min(1280px, 100%);
-      margin: 0 auto;
+      width: 100%;
     }
 
     header {
@@ -157,7 +156,8 @@ UI = """<!DOCTYPE html>
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: calc(14px + var(--safe-t)) clamp(14px, 3vw, 28px) 14px;
+      width: 100%;
+      padding: calc(14px + var(--safe-t)) clamp(16px, 4vw, 40px) 14px;
       border-bottom: 1px solid var(--line);
       background: rgba(10, 18, 25, 0.72);
       backdrop-filter: blur(14px);
@@ -265,7 +265,10 @@ UI = """<!DOCTYPE html>
       scroll-behavior: smooth;
       padding: 20px clamp(12px, 3vw, 28px) 8px;
       -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
+    main::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
     #chat {
       width: var(--chat-max);
@@ -296,20 +299,13 @@ UI = """<!DOCTYPE html>
       margin-bottom: 16px;
     }
     .welcome h2 {
-      margin: 0 0 10px;
+      margin: 0 0 22px;
       font-family: var(--serif);
       font-size: clamp(1.55rem, 4.5vw, 2.35rem);
       line-height: 1.15;
       letter-spacing: -0.03em;
       font-weight: 600;
       max-width: 16ch;
-    }
-    .welcome p {
-      margin: 0 0 22px;
-      color: var(--muted);
-      font-size: clamp(0.95rem, 2.2vw, 1.05rem);
-      line-height: 1.55;
-      max-width: 46ch;
     }
     .suggestions {
       display: grid;
@@ -580,7 +576,6 @@ UI = """<!DOCTYPE html>
     }
 
     @media (min-width: 1800px) {
-      .app { width: min(1440px, 100%); }
       :root { --chat-max: 1040px; --composer-max: 1040px; }
     }
 
@@ -731,8 +726,7 @@ UI = """<!DOCTYPE html>
       wrap.id = 'welcome';
       wrap.innerHTML =
         '<div class="welcome-badge">Document-grounded Q&A</div>' +
-        '<h2>Ask FxHive about your policies</h2>' +
-        '<p>Answers come only from the indexed PDF. If something is not in the document, the assistant will say so clearly.</p>';
+        '<h2>Ask FxHive about your policies</h2>';
       const grid = document.createElement('div');
       grid.className = 'suggestions';
       SUGGESTIONS.forEach((item) => {
